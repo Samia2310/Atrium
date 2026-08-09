@@ -6,6 +6,16 @@ const router = Router();
 
 router.get('/', requireSession, async (req, res) => {
   try {
+    const [me] = await query<{ kind: string }>('select kind from person where id = $1', [res.locals.personId]);
+    if (!me) {
+      res.status(401).json({ error: 'not signed in' });
+      return;
+    }
+    if (me.kind !== 'admin') {
+      res.status(403).json({ error: 'not permitted' });
+      return;
+    }
+
     const kind = typeof req.query.kind === 'string' && req.query.kind ? req.query.kind : null;
 
     const params: unknown[] = [];

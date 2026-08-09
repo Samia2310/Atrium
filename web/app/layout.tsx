@@ -10,7 +10,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <nav>
-          <a href="/">Sessions</a>
+          <a href="/">Atrium</a>
+          <a href="/participant">Participant</a>
+          <a href="/coach">Coach</a>
           <a href="/admin">Dashboard</a>
           <a href="/admin/sessions">Calendar</a>
           <a href="/login">Log in</a>

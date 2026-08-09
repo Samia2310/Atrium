@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { API_BASE } from '@/lib/api';
 
 type Room = { id: number; name: string; capacity: number };
 type Person = { id: number; full_name: string; email: string; kind: string };
@@ -17,8 +18,6 @@ type Session = {
   enrolled_count: number;
   places_remaining: number;
 };
-
-const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:4000';
 
 const dayNames = [
   'Monday',
@@ -60,11 +59,12 @@ export default function AdminSessions() {
 
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [discipline, setDiscipline] = useState(disciplines[0]);
   const [sessionType, setSessionType] = useState(sessionTypes[1]);
   const [roomId, setRoomId] = useState('');
   const [coachId, setCoachId] = useState('');
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
 
   const days = [0, 1, 2, 3, 4, 5, 6].map(
     (offset) => new Date(weekStart.getTime() + offset * dayMilliseconds)
@@ -74,11 +74,15 @@ export default function AdminSessions() {
     const to = new Date(weekStart.getTime() + 7 * dayMilliseconds);
 
     fetch(
-      `${apiBaseUrl}/api/sessions?from=${weekStart.toISOString()}&to=${to.toISOString()}`,
+      `${API_BASE}/api/sessions?from=${weekStart.toISOString()}&to=${to.toISOString()}`,
       { credentials: 'include' }
     )
       .then((res) => res.json())
-      .then(setSessions);
+      .then((rows) => {
+        if (rows.error) throw new Error(rows.error);
+        setSessions(rows);
+      })
+      .catch((err) => setError(err.message));
   }
 
   useEffect(() => {
@@ -86,11 +90,11 @@ export default function AdminSessions() {
   }, [weekStart]);
 
   useEffect(() => {
-    fetch(`${apiBaseUrl}/api/rooms`, { credentials: 'include' })
+    fetch(`${API_BASE}/api/rooms`, { credentials: 'include' })
       .then((res) => res.json())
       .then(setRooms);
 
-    fetch(`${apiBaseUrl}/api/people`, { credentials: 'include' })
+    fetch(`${API_BASE}/api/people?kind=coach`, { credentials: 'include' })
       .then((res) => res.json())
       .then(setPeople);
   }, []);
@@ -109,8 +113,10 @@ export default function AdminSessions() {
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setNotice('');
+    setError('');
 
-    await fetch(`${apiBaseUrl}/api/sessions`, {
+    const res = await fetch(`${API_BASE}/api/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -119,17 +125,31 @@ export default function AdminSessions() {
         coach_id: Number(coachId),
         discipline,
         session_type: sessionType,
-        starts_at: new Date(`${date}T${startTime}`).toISOString(),
-        ends_at: new Date(`${date}T${endTime}`).toISOString()
+        starts_at: centreLocalInputToIso(date, startTime)
       })
     });
 
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error || 'Could not create the session.');
+      return;
+    }
+
+    setNotice('Session created.');
     loadSessions();
   }
 
   return (
-    <main>
-      <h1>Session calendar</h1>
+    <main className="page-shell">
+      <section className="section-heading">
+        <div>
+          <p className="eyebrow">Administrator</p>
+          <h1>Session calendar</h1>
+        </div>
+      </section>
+
+      {notice && <p className="notice">{notice}</p>}
+      {error && <p className="notice error">{error}</p>}
 
       <p>
         <button onClick={() => setWeekStart(new Date(weekStart.getTime() - 7 * dayMilliseconds))}>
@@ -174,19 +194,16 @@ export default function AdminSessions() {
       <form onSubmit={onSubmit}>
         <label>
           <span>Date</span>
-          <input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+          <input required type="date" value={date} onChange={(event) => setDate(event.target.value)} />
         </label>
         <label>
           <span>Starts</span>
           <input
+            required
             type="time"
             value={startTime}
             onChange={(event) => setStartTime(event.target.value)}
           />
-        </label>
-        <label>
-          <span>Ends</span>
-          <input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
         </label>
         <label>
           <span>Discipline</span>
@@ -210,7 +227,7 @@ export default function AdminSessions() {
         </label>
         <label>
           <span>Room</span>
-          <select value={roomId} onChange={(event) => setRoomId(event.target.value)}>
+          <select required value={roomId} onChange={(event) => setRoomId(event.target.value)}>
             <option value=""></option>
             {rooms.map((room) => (
               <option key={room.id} value={room.id}>
@@ -221,7 +238,7 @@ export default function AdminSessions() {
         </label>
         <label>
           <span>Coach</span>
-          <select value={coachId} onChange={(event) => setCoachId(event.target.value)}>
+          <select required value={coachId} onChange={(event) => setCoachId(event.target.value)}>
             <option value=""></option>
             {people.map((person) => (
               <option key={person.id} value={person.id}>
@@ -234,4 +251,37 @@ export default function AdminSessions() {
       </form>
     </main>
   );
+}
+
+function offsetMinutesAt(date: Date, timeZone: string): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }).formatToParts(date).map((part) => [part.type, part.value])
+  );
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  const asIfUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  return (asIfUtc - date.getTime()) / 60000;
+}
+
+function centreLocalInputToIso(date: string, time: string): string {
+  const [year, month, day] = date.split('-').map(Number);
+  const [hour, minute] = time.split(':').map(Number);
+  const localAsUtc = Date.UTC(year, month - 1, day, hour, minute, 0);
+  const offset = offsetMinutesAt(new Date(localAsUtc), 'America/New_York');
+  return new Date(localAsUtc - offset * 60_000).toISOString();
 }
