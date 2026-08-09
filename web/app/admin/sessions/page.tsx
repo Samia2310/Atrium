@@ -52,6 +52,7 @@ function startOfWeek(date: Date) {
 }
 
 export default function AdminSessions() {
+  const [hydrated, setHydrated] = useState(false);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [sessions, setSessions] = useState<Session[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -84,6 +85,10 @@ export default function AdminSessions() {
       })
       .catch((err) => setError(err.message));
   }
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     loadSessions();
@@ -137,6 +142,20 @@ export default function AdminSessions() {
 
     setNotice('Session created.');
     loadSessions();
+  }
+
+  if (!hydrated) {
+    return (
+      <main className="page-shell">
+        <section className="section-heading">
+          <div>
+            <p className="eyebrow">Administrator</p>
+            <h1>Session calendar</h1>
+          </div>
+        </section>
+        <p className="notice">Loading session calendar...</p>
+      </main>
+    );
   }
 
   return (
