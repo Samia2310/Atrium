@@ -3,7 +3,7 @@ import { query, withTransaction } from '../db';
 import { requireSession } from '../auth';
 import { hoursOfNotice, refundAmount, refundPercent, roomFee, seatFee } from '../credits';
 import { hasFortyEightHoursNotice, isKnownSessionType, openingHoursViolation, sessionEnd } from '../bookingRules';
-import { onCoachCancelledSession, onRoomBooked, onRoomCancelled } from '../events';
+import { coachAttendeeIds, onCoachAttendingChanged, onCoachCancelledSession, onRoomBooked, onRoomCancelled } from '../events';
 
 const router = Router();
 
@@ -442,6 +442,9 @@ router.patch('/:id', requireSession, async (req, res) => {
       return;
     }
 
+    const attendingCoachIds = await coachAttendeeIds(id, updated[0].coach_id);
+    await onCoachAttendingChanged(updated[0], attendingCoachIds);
+
     res.json(updated[0]);
   } catch (err) {
     if (err instanceof Error && err.message === 'ROOM_CLASH') {
@@ -492,6 +495,7 @@ router.post('/:id/cancel', requireSession, async (req, res) => {
       return;
     }
 
+    const attendingCoachIds = await coachAttendeeIds(id, session.coach_id);
     const percent = refundPercent(hoursOfNotice(new Date(), new Date(session.starts_at)));
     const roomRefund = refundAmount(Number(session.room_fee_credits), percent);
 
@@ -540,6 +544,7 @@ router.post('/:id/cancel', requireSession, async (req, res) => {
 
     await onCoachCancelledSession(session, summary.attendeeEmails);
     await onRoomCancelled(session);
+    await onCoachAttendingChanged(session, attendingCoachIds);
 
     res.json({
       id,

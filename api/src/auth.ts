@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { Request, Response, NextFunction } from 'express';
+import { CookieOptions, Request, Response, NextFunction } from 'express';
 import { query } from './db';
 import { sendEmail } from './email';
 
@@ -62,16 +62,43 @@ function exposeSetupLinks(): boolean {
   return process.env.MAIL_TRANSPORT === 'console' || process.env.NODE_ENV !== 'production';
 }
 
+function envFlag(name: string): boolean {
+  return ['1', 'true', 'yes', 'on'].includes((process.env[name] || '').toLowerCase());
+}
+
+function requestIsSecure(req: Request): boolean {
+  const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  return (
+    req.secure ||
+    forwardedProto === 'https' ||
+    envFlag('COOKIE_SECURE') ||
+    (process.env.API_BASE_URL || '').startsWith('https://')
+  );
+}
+
+function sessionCookieOptions(req: Request): CookieOptions {
+  const secure = requestIsSecure(req);
+  return {
+    httpOnly: true,
+    sameSite: secure ? 'none' : 'lax',
+    secure,
+    path: '/',
+    maxAge: SESSION_MAX_AGE_MS
+  };
+}
+
 async function sendPasswordSetToken(
   personId: number,
   email: string,
   subject = 'Set your Atrium password'
 ): Promise<PasswordLinkDelivery> {
   const token = crypto.randomBytes(32).toString('hex'); // never stored raw
-  await query(
+  const tokenHash = hashToken(token);
+  const tokenRows = await query<{ id: number }>(
     `insert into password_token (person_id, token_hash, expires_at)
-     values ($1, $2, $3)`,
-    [personId, hashToken(token), new Date(Date.now() + RESET_TOKEN_TTL_MS)]
+     values ($1, $2, $3)
+     returning id`,
+    [personId, tokenHash, new Date(Date.now() + RESET_TOKEN_TTL_MS)]
   );
 
   const link = `${process.env.WEB_BASE_URL || 'http://localhost:3000'}/set-password?token=${token}`;
@@ -82,6 +109,7 @@ async function sendPasswordSetToken(
   );
 
   if (!delivery.delivered) {
+    await query('delete from password_token where id = $1', [tokenRows[0].id]);
     throw new Error(`EMAIL_DELIVERY_FAILED: ${delivery.error || 'unknown SMTP error'}`);
   }
 
@@ -158,12 +186,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       await query('update person set password_hash = $1 where id = $2', [hashPassword(password), person.id]);
     }
 
-    res.cookie(SESSION_COOKIE, signSession(person.id), {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: SESSION_MAX_AGE_MS
-    });
+    res.cookie(SESSION_COOKIE, signSession(person.id), sessionCookieOptions(req));
 
     res.json({
       id: person.id,
@@ -262,10 +285,12 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     if (existing.length > 0) {
       const person = existing[0];
-      let delivery: PasswordLinkDelivery | null = null;
-      if (person.active || person.password_hash === null) {
-        delivery = await sendPasswordSetToken(person.id, person.email, 'Your Atrium sign-in link');
+      if (person.active && person.password_hash) {
+        res.status(409).json({ error: 'an account already exists for that email; sign in instead' });
+        return;
       }
+
+      const delivery = await sendPasswordSetToken(person.id, person.email, 'Your Atrium sign-in link');
       res.status(202).json({
         registered: true,
         check_your_email: true,
@@ -281,7 +306,14 @@ export async function register(req: Request, res: Response): Promise<void> {
       [email, fullName, accountKind, STARTING_CREDITS[accountKind]]
     );
 
-    const delivery = await sendPasswordSetToken(inserted[0].id, inserted[0].email, 'Verify your Atrium email');
+    let delivery: PasswordLinkDelivery;
+    try {
+      delivery = await sendPasswordSetToken(inserted[0].id, inserted[0].email, 'Verify your Atrium email');
+    } catch (err) {
+      await query('delete from person where id = $1 and active = false and password_hash is null', [inserted[0].id]);
+      throw err;
+    }
+
     res.status(201).json({
       registered: true,
       check_your_email: true,
@@ -291,7 +323,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     console.error(err);
     if (err instanceof Error && err.message.startsWith('EMAIL_DELIVERY_FAILED')) {
       res.status(502).json({
-        error: 'account was saved, but the verification email could not be sent. Check SMTP settings and try the password link again.'
+        error: 'verification email could not be sent. Check SMTP settings and try again.'
       });
       return;
     }
@@ -328,6 +360,15 @@ export async function setPasswordWithToken(req: Request, res: Response): Promise
       return;
     }
 
+    const people = await query<{ id: number; active: boolean }>(
+      'select id, active from person where id = $1',
+      [record.person_id]
+    );
+    if (people.length === 0) {
+      res.status(400).json({ error: 'this link is no longer valid; request a new verification email' });
+      return;
+    }
+
     const updatedPeople = await query<{
       id: number;
       email: string;
@@ -337,28 +378,22 @@ export async function setPasswordWithToken(req: Request, res: Response): Promise
     }>(
       `update person
           set password_hash = $1,
-              active = case when password_hash is null then true else active end
+              active = true
         where id = $2
-          and (active = true or password_hash is null)
         returning id, email, full_name, kind, active`,
       [hashPassword(password), record.person_id]
     );
 
     const person = updatedPeople[0];
-    if (!person || !person.active) {
-      res.status(403).json({ error: 'this account is inactive' });
+    if (!person) {
+      res.status(400).json({ error: 'this link is no longer valid; request a new verification email' });
       return;
     }
 
     await query('update password_token set used_at = now() where id = $1', [record.id]);
 
     // Sign them straight in — nicer UX, and the token has already proven inbox ownership.
-    res.cookie(SESSION_COOKIE, signSession(record.person_id), {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: SESSION_MAX_AGE_MS
-    });
+    res.cookie(SESSION_COOKIE, signSession(record.person_id), sessionCookieOptions(req));
     res.json({
       password_set: true,
       id: person.id,

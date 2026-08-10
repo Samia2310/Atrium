@@ -4,12 +4,21 @@ import { Pool, PoolClient, QueryResultRow } from 'pg';
 
 config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
+function databaseNeedsSsl(): boolean {
+  return (
+    process.env.NODE_ENV === 'production' ||
+    process.env.PGSSLMODE === 'require' ||
+    /[?&]sslmode=require\b/.test(process.env.DATABASE_URL || '')
+  );
+}
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 10,
-  // Render's managed Postgres requires SSL; local dev Postgres usually
-  // doesn't support it at all, so only turn it on outside development.
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+  // Hosted Postgres providers often require SSL, while local Postgres
+  // usually does not. Honor sslmode=require in the URL so NODE_ENV can
+  // remain "development" during local app work.
+  ssl: databaseNeedsSsl() ? { rejectUnauthorized: false } : undefined
 });
 
 export async function query<T extends QueryResultRow = any>(

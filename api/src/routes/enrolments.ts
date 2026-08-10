@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { withTransaction, query } from '../db';
 import { requireSession } from '../auth';
 import { findOrCreatePersonByEmail, requestPasswordSet } from '../auth';
-import { onParticipantBooked, onParticipantCancelled } from '../events';
+import { coachAttendeeIds, onCoachAttendingChanged, onParticipantBooked, onParticipantCancelled } from '../events';
 import { hoursOfNotice, refundAmount, refundPercent } from '../credits';
 
 const router = Router();
@@ -99,6 +99,7 @@ router.post('/', requireSession, async (req, res) => {
   try {
     const result = await bookSession(sessionId, personId);
     await onParticipantBooked(result.session, personId);
+    await onCoachAttendingChanged(result.session, await coachAttendeeIds(sessionId, result.session.coach_id));
     res.status(201).json(result.enrolment);
   } catch (err) {
     if (err instanceof HttpError) { res.status(err.status).json({ error: err.message }); return; }
@@ -127,6 +128,7 @@ router.post('/anonymous', async (req, res) => {
     const result = await bookSession(sessionId, personId);
 
     await onParticipantBooked(result.session, personId);
+    await onCoachAttendingChanged(result.session, await coachAttendeeIds(sessionId, result.session.coach_id));
     // Fire-and-forget in the sense that a failed email shouldn't undo a
     // successful, already-committed booking — but we still await it so
     // any error is logged rather than silently lost.
@@ -170,7 +172,7 @@ router.post('/:id/cancel', requireSession, async (req, res) => {
   try {
     const result = await withTransaction(async (client) => {
       const rows = await client.query(
-        `select e.*, s.starts_at, s.room_fee_credits, s.coach_id, s.discipline
+        `select e.*, s.room_id, s.starts_at, s.ends_at, s.room_fee_credits, s.coach_id, s.discipline, s.session_type
            from enrolment e join session s on s.id = e.session_id
           where e.id = $1 for update`,
         [id]
@@ -193,6 +195,10 @@ router.post('/:id/cancel', requireSession, async (req, res) => {
     }, 'serializable');
 
     await onParticipantCancelled(result.enrolment, res.locals.personId);
+    await onCoachAttendingChanged(
+      result.enrolment,
+      await coachAttendeeIds(result.enrolment.session_id, result.enrolment.coach_id)
+    );
     res.json({ id, cancelled: true, credits_refunded: result.refund });
   } catch (err) {
     if (err instanceof HttpError) { res.status(err.status).json({ error: err.message }); return; }
