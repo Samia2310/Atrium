@@ -80,7 +80,14 @@ export default function CalendarPage() {
     finally { setBusyId(null); }
   }
 
-  if (!me) return <main className="page-shell"><p className="notice">Loading your calendar...</p></main>;
+  if (!me) {
+    return (
+      <main className="page-shell">
+        <p className={`notice ${error ? 'error' : ''}`}>{error || 'Loading your calendar...'}</p>
+        {error && <button type="button" onClick={() => { setError(''); load().catch((err) => setError(err instanceof Error ? err.message : 'Could not load the calendar.')); }}>Try again</button>}
+      </main>
+    );
+  }
 
   if (me.kind === 'admin') return <main className="page-shell"><section className="section-heading"><div><p className="eyebrow">Administrator</p><h1>Calendar</h1></div><a className="button" href="/admin/sessions">Manage sessions</a></section><p className="notice">The administrator calendar includes full session management and attendee counts.</p></main>;
 
