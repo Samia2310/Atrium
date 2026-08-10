@@ -13,6 +13,11 @@ const STARTING_CREDITS: Record<'participant' | 'coach', number> = {
   coach: 2000
 };
 
+type PasswordLinkDelivery = {
+  sent: true;
+  setupLink?: string;
+};
+
 function sessionSecret(): string {
   return process.env.SESSION_SECRET || 'change-me';
 }
@@ -53,7 +58,15 @@ function isPlausibleEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-async function sendPasswordSetToken(personId: number, email: string, subject = 'Set your Atrium password'): Promise<void> {
+function exposeSetupLinks(): boolean {
+  return process.env.MAIL_TRANSPORT === 'console' || process.env.NODE_ENV !== 'production';
+}
+
+async function sendPasswordSetToken(
+  personId: number,
+  email: string,
+  subject = 'Set your Atrium password'
+): Promise<PasswordLinkDelivery> {
   const token = crypto.randomBytes(32).toString('hex'); // never stored raw
   await query(
     `insert into password_token (person_id, token_hash, expires_at)
@@ -62,7 +75,17 @@ async function sendPasswordSetToken(personId: number, email: string, subject = '
   );
 
   const link = `${process.env.WEB_BASE_URL || 'http://localhost:3000'}/set-password?token=${token}`;
-  await sendEmail(email, subject, `Use this link within an hour to verify your email and set your password: ${link}`);
+  const delivery = await sendEmail(
+    email,
+    subject,
+    `Use this link within an hour to verify your email and set your password: ${link}`
+  );
+
+  if (!delivery.delivered) {
+    throw new Error(`EMAIL_DELIVERY_FAILED: ${delivery.error || 'unknown SMTP error'}`);
+  }
+
+  return exposeSetupLinks() ? { sent: true, setupLink: link } : { sent: true };
 }
 
 export function signSession(personId: number, issuedAt: number = Date.now()): string {
@@ -193,7 +216,7 @@ export async function findOrCreatePersonByEmail(email: string): Promise<number> 
   return inserted[0].id;
 }
 
-export async function requestPasswordSet(email: string): Promise<void> {
+export async function requestPasswordSet(email: string): Promise<PasswordLinkDelivery | null> {
   const normalizedEmail = email.trim().toLowerCase();
   const people = await query<{ id: number }>(
     `select id
@@ -202,9 +225,9 @@ export async function requestPasswordSet(email: string): Promise<void> {
         and (active = true or password_hash is null)`,
     [normalizedEmail]
   );
-  if (people.length === 0) return; // don't reveal whether the email exists
+  if (people.length === 0) return null; // don't reveal whether the email exists
 
-  await sendPasswordSetToken(people[0].id, normalizedEmail);
+  return sendPasswordSetToken(people[0].id, normalizedEmail);
 }
 
 export async function register(req: Request, res: Response): Promise<void> {
@@ -239,10 +262,15 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     if (existing.length > 0) {
       const person = existing[0];
+      let delivery: PasswordLinkDelivery | null = null;
       if (person.active || person.password_hash === null) {
-        await sendPasswordSetToken(person.id, person.email, 'Your Atrium sign-in link');
+        delivery = await sendPasswordSetToken(person.id, person.email, 'Your Atrium sign-in link');
       }
-      res.status(202).json({ registered: true, check_your_email: true });
+      res.status(202).json({
+        registered: true,
+        check_your_email: true,
+        setup_link: delivery?.setupLink
+      });
       return;
     }
 
@@ -253,10 +281,20 @@ export async function register(req: Request, res: Response): Promise<void> {
       [email, fullName, accountKind, STARTING_CREDITS[accountKind]]
     );
 
-    await sendPasswordSetToken(inserted[0].id, inserted[0].email, 'Verify your Atrium email');
-    res.status(201).json({ registered: true, check_your_email: true });
+    const delivery = await sendPasswordSetToken(inserted[0].id, inserted[0].email, 'Verify your Atrium email');
+    res.status(201).json({
+      registered: true,
+      check_your_email: true,
+      setup_link: delivery.setupLink
+    });
   } catch (err) {
     console.error(err);
+    if (err instanceof Error && err.message.startsWith('EMAIL_DELIVERY_FAILED')) {
+      res.status(502).json({
+        error: 'account was saved, but the verification email could not be sent. Check SMTP settings and try the password link again.'
+      });
+      return;
+    }
     res.status(500).json({ error: 'could not create that account' });
   }
 }

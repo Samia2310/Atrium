@@ -14,17 +14,31 @@ type Session = {
   seat_fee_credits: string;
 };
 
-const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:4000';
+function apiBaseUrl() {
+  return (
+    process.env.API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    'http://localhost:4000'
+  ).replace(/\/$/, '');
+}
 
 async function getUpcomingSessions(): Promise<
   { ok: true; sessions: Session[] } | { ok: false; error: string }
 > {
   const from = new Date();
   const to = new Date(from.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const baseUrl = apiBaseUrl();
+
+  if (process.env.NODE_ENV === 'production' && baseUrl.includes('localhost')) {
+    return {
+      ok: false,
+      error: 'Schedule could not be loaded because the deployed web app is still configured to use localhost for the API.'
+    };
+  }
 
   try {
     const res = await fetch(
-      `${apiBaseUrl}/api/sessions?from=${from.toISOString()}&to=${to.toISOString()}`,
+      `${baseUrl}/api/sessions?from=${from.toISOString()}&to=${to.toISOString()}`,
       { cache: 'no-store' }
     );
     if (!res.ok) return { ok: false, error: `Schedule could not be loaded (${res.status}).` };

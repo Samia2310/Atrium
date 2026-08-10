@@ -383,6 +383,10 @@ label {
   background: #f2fbf4;
 }
 
+.notice.success p {
+  margin-bottom: 6px;
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);

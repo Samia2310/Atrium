@@ -68,13 +68,17 @@ app.get('/api/me', requireSession, me);
 
 app.post('/api/request-password-set', async (req, res) => {
   try {
-    await requestPasswordSet(req.body?.email || '');
+    const delivery = await requestPasswordSet(req.body?.email || '');
 
     // Always 200 regardless of whether the email exists —
     // no account enumeration.
-    res.json({ requested: true });
+    res.json({ requested: true, setup_link: delivery?.setupLink });
   } catch (err) {
     console.error(err);
+    if (err instanceof Error && err.message.startsWith('EMAIL_DELIVERY_FAILED')) {
+      res.status(502).json({ error: 'verification email could not be sent. Check SMTP settings and try again.' });
+      return;
+    }
     res.status(500).json({ error: 'could not process that request' });
   }
 });

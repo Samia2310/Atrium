@@ -1,14 +1,14 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { Transporter } from 'nodemailer';
 
-type SentEmail = { to: string; subject: string; delivered: boolean; error?: string };
+export type SentEmail = { to: string; subject: string; delivered: boolean; error?: string };
 
 function env(name: string, fallback = ''): string {
   return process.env[name] || fallback;
 }
 
-let cachedTransport: nodemailer.Transporter | null = null;
+let cachedTransport: Transporter | null = null;
 
-function transport(): nodemailer.Transporter {
+function transport(): Transporter {
   if (cachedTransport) return cachedTransport;
 
   const port = Number(env('SMTP_PORT', '587'));
@@ -20,7 +20,7 @@ function transport(): nodemailer.Transporter {
     // right handshake automatically from this flag.
     secure: port === 465,
     auth: env('SMTP_USER')
-      ? { user: env('SMTP_USER'), pass: env('SMTP_PASS') }
+      ? { user: env('SMTP_USER'), pass: env('SMTP_PASS') || env('SMTP_PASSWORD') }
       : undefined
   });
   return cachedTransport;

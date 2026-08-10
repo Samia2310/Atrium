@@ -11,6 +11,10 @@ type Person = {
   kind: 'participant' | 'coach' | 'admin';
 };
 
+type AuthActionResponse = {
+  setup_link?: string;
+};
+
 type AuthMode = 'sign-in' | 'create' | 'link';
 type PublicKind = 'participant' | 'coach';
 
@@ -34,12 +38,14 @@ export default function Login() {
   const [fullName, setFullName] = useState('');
   const [kind, setKind] = useState<PublicKind>('participant');
   const [notice, setNotice] = useState('');
+  const [setupLink, setSetupLink] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   function switchMode(nextMode: AuthMode) {
     setMode(nextMode);
     setNotice('');
+    setSetupLink('');
     setError('');
     setPassword('');
   }
@@ -49,6 +55,7 @@ export default function Login() {
     setBusy(true);
     setError('');
     setNotice('');
+    setSetupLink('');
 
     const endpoint =
       mode === 'create' ? '/api/register' :
@@ -80,7 +87,9 @@ export default function Login() {
       return;
     }
 
+    const responseBody: AuthActionResponse = await res.json();
     setNotice('Check your email for a secure link to verify the address and set your password.');
+    if (responseBody.setup_link) setSetupLink(responseBody.setup_link);
     if (mode === 'create') setMode('sign-in');
   }
 
@@ -138,7 +147,12 @@ export default function Login() {
             </p>
           </div>
 
-          {notice && <p className="notice success">{notice}</p>}
+          {notice && (
+            <div className="notice success">
+              <p>{notice}</p>
+              {setupLink && <a href={setupLink}>Open password setup link</a>}
+            </div>
+          )}
           {error && <p className="notice error">{error}</p>}
 
           {mode === 'create' && (
