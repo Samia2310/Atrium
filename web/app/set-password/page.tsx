@@ -4,6 +4,16 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { API_BASE } from '@/lib/api';
 
+type SetPasswordResponse = {
+  kind: 'participant' | 'coach' | 'admin';
+};
+
+function dashboardFor(kind: SetPasswordResponse['kind']) {
+  if (kind === 'admin') return '/admin';
+  if (kind === 'coach') return '/coach';
+  return '/participant';
+}
+
 function SetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -41,7 +51,8 @@ function SetPasswordForm() {
       return;
     }
 
-    router.push('/participant');
+    const person: SetPasswordResponse = await res.json();
+    router.push(dashboardFor(person.kind));
   }
 
   return (

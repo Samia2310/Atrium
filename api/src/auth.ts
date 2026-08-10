@@ -8,6 +8,10 @@ export const SESSION_COOKIE = 'atrium_session';
 const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const RESET_TOKEN_TTL_MS = 1000 * 60 * 60; // 1 hour
 const SCRYPT_KEY_LENGTH = 64;
+const STARTING_CREDITS: Record<'participant' | 'coach', number> = {
+  participant: 4000,
+  coach: 2000
+};
 
 function sessionSecret(): string {
   return process.env.SESSION_SECRET || 'change-me';
@@ -43,6 +47,22 @@ function verifyPassword(password: string, storedHash: string | null): { ok: bool
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function isPlausibleEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+async function sendPasswordSetToken(personId: number, email: string, subject = 'Set your Atrium password'): Promise<void> {
+  const token = crypto.randomBytes(32).toString('hex'); // never stored raw
+  await query(
+    `insert into password_token (person_id, token_hash, expires_at)
+     values ($1, $2, $3)`,
+    [personId, hashToken(token), new Date(Date.now() + RESET_TOKEN_TTL_MS)]
+  );
+
+  const link = `${process.env.WEB_BASE_URL || 'http://localhost:3000'}/set-password?token=${token}`;
+  await sendEmail(email, subject, `Use this link within an hour to verify your email and set your password: ${link}`);
 }
 
 export function signSession(personId: number, issuedAt: number = Date.now()): string {
@@ -175,18 +195,70 @@ export async function findOrCreatePersonByEmail(email: string): Promise<number> 
 
 export async function requestPasswordSet(email: string): Promise<void> {
   const normalizedEmail = email.trim().toLowerCase();
-  const people = await query<{ id: number }>('select id from person where lower(email) = lower($1) and active = true', [normalizedEmail]);
+  const people = await query<{ id: number }>(
+    `select id
+       from person
+      where lower(email) = lower($1)
+        and (active = true or password_hash is null)`,
+    [normalizedEmail]
+  );
   if (people.length === 0) return; // don't reveal whether the email exists
 
-  const token = crypto.randomBytes(32).toString('hex'); // never stored raw
-  await query(
-    `insert into password_token (person_id, token_hash, expires_at)
-     values ($1, $2, $3)`,
-    [people[0].id, hashToken(token), new Date(Date.now() + RESET_TOKEN_TTL_MS)]
-  );
+  await sendPasswordSetToken(people[0].id, normalizedEmail);
+}
 
-  const link = `${process.env.WEB_BASE_URL || 'http://localhost:3000'}/set-password?token=${token}`;
-  await sendEmail(normalizedEmail, 'Set your password', `Use this link within an hour: ${link}`);
+export async function register(req: Request, res: Response): Promise<void> {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const fullName = typeof req.body?.full_name === 'string' ? req.body.full_name.trim() : '';
+  const kind = req.body?.kind;
+
+  if (!fullName || fullName.length < 2) {
+    res.status(400).json({ error: 'full name is required' });
+    return;
+  }
+  if (!email || !isPlausibleEmail(email)) {
+    res.status(400).json({ error: 'a valid email is required' });
+    return;
+  }
+  if (kind !== 'participant' && kind !== 'coach') {
+    res.status(400).json({ error: 'account type must be participant or coach' });
+    return;
+  }
+  const accountKind: 'participant' | 'coach' = kind;
+
+  try {
+    const existing = await query<{
+      id: number;
+      email: string;
+      active: boolean;
+      password_hash: string | null;
+    }>(
+      'select id, email, active, password_hash from person where lower(email) = lower($1)',
+      [email]
+    );
+
+    if (existing.length > 0) {
+      const person = existing[0];
+      if (person.active || person.password_hash === null) {
+        await sendPasswordSetToken(person.id, person.email, 'Your Atrium sign-in link');
+      }
+      res.status(202).json({ registered: true, check_your_email: true });
+      return;
+    }
+
+    const inserted = await query<{ id: number; email: string }>(
+      `insert into person (email, password_hash, full_name, kind, credits, active, created_at)
+       values ($1, null, $2, $3, $4, false, now())
+       returning id, email`,
+      [email, fullName, accountKind, STARTING_CREDITS[accountKind]]
+    );
+
+    await sendPasswordSetToken(inserted[0].id, inserted[0].email, 'Verify your Atrium email');
+    res.status(201).json({ registered: true, check_your_email: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'could not create that account' });
+  }
 }
 
 export async function setPasswordWithToken(req: Request, res: Response): Promise<void> {
@@ -218,7 +290,28 @@ export async function setPasswordWithToken(req: Request, res: Response): Promise
       return;
     }
 
-    await query('update person set password_hash = $1 where id = $2', [hashPassword(password), record.person_id]);
+    const updatedPeople = await query<{
+      id: number;
+      email: string;
+      full_name: string;
+      kind: 'participant' | 'coach' | 'admin';
+      active: boolean;
+    }>(
+      `update person
+          set password_hash = $1,
+              active = case when password_hash is null then true else active end
+        where id = $2
+          and (active = true or password_hash is null)
+        returning id, email, full_name, kind, active`,
+      [hashPassword(password), record.person_id]
+    );
+
+    const person = updatedPeople[0];
+    if (!person || !person.active) {
+      res.status(403).json({ error: 'this account is inactive' });
+      return;
+    }
+
     await query('update password_token set used_at = now() where id = $1', [record.id]);
 
     // Sign them straight in — nicer UX, and the token has already proven inbox ownership.
@@ -228,7 +321,13 @@ export async function setPasswordWithToken(req: Request, res: Response): Promise
       path: '/',
       maxAge: SESSION_MAX_AGE_MS
     });
-    res.json({ password_set: true });
+    res.json({
+      password_set: true,
+      id: person.id,
+      email: person.email,
+      full_name: person.full_name,
+      kind: person.kind
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'could not set the password' });

@@ -377,6 +377,12 @@ label {
   background: #fff6f3;
 }
 
+.notice.success {
+  border-color: #b9dbc4;
+  color: var(--brand);
+  background: #f2fbf4;
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -424,12 +430,108 @@ tbody tr:hover {
   padding: 40px 0;
 }
 
+.auth-shell-wide {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 460px);
+}
+
 .auth-copy {
   max-width: 520px;
 }
 
 .auth-copy h1 {
   color: var(--brand);
+}
+
+.auth-benefits {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.auth-benefits article {
+  display: grid;
+  gap: 3px;
+  max-width: 500px;
+  border-left: 3px solid var(--brand);
+  background: rgb(255 255 255 / 64%);
+  padding: 10px 12px;
+}
+
+.auth-benefits span {
+  color: var(--muted);
+}
+
+.auth-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+  background: #fbfaf6;
+  padding: 6px;
+}
+
+.auth-tabs button {
+  min-height: 42px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--brand);
+  box-shadow: none;
+}
+
+.auth-tabs button.active {
+  background: var(--brand);
+  color: white;
+}
+
+.auth-tabs button:hover {
+  box-shadow: none;
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.auth-form h2 {
+  color: var(--brand);
+  font-size: 28px;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.auth-form .muted {
+  margin-bottom: 0;
+}
+
+.auth-footer {
+  border-top: 1px solid var(--border);
+  background: #fbfaf6;
+  padding: 12px 18px 16px;
+}
+
+.link-button {
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  padding: 0;
+  text-align: left;
+  white-space: normal;
+}
+
+.link-button:hover {
+  background: transparent;
+  box-shadow: none;
+  color: var(--brand-2);
+  transform: none;
 }
 
 .panel {
@@ -494,6 +596,55 @@ tbody tr:hover {
 
 .login-mode-note span {
   color: var(--muted);
+}
+
+.role-picker {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.role-picker legend {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.role-picker label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 11px 12px;
+  cursor: pointer;
+}
+
+.role-picker label.active {
+  border-color: rgb(6 63 45 / 38%);
+  background: var(--brand-soft);
+}
+
+.role-picker input {
+  width: 16px;
+  min-height: 16px;
+  accent-color: var(--brand);
+}
+
+.role-picker span {
+  display: grid;
+  gap: 2px;
+}
+
+.role-picker small {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .metric {
@@ -731,6 +882,18 @@ tbody tr:hover {
     font-size: 34px;
   }
 
+  .auth-benefits {
+    margin-top: 18px;
+  }
+
+  .auth-form {
+    padding: 16px;
+  }
+
+  .auth-form h2 {
+    font-size: 24px;
+  }
+
   .page-shell {
     width: calc(100% - 28px);
     padding-top: 24px;
@@ -751,6 +914,8 @@ tbody tr:hover {
   }
 
   .segmented-control button,
+  .auth-tabs button,
+  .link-button,
   .assistant-suggestions button {
     width: auto;
   }

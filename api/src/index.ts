@@ -6,6 +6,7 @@ import {
   login,
   logout,
   me,
+  register,
   requireSession,
   requestPasswordSet,
   setPasswordWithToken
@@ -61,6 +62,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.post('/api/login', login);
+app.post('/api/register', register);
 app.post('/api/logout', logout);
 app.get('/api/me', requireSession, me);
 
