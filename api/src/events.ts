@@ -123,6 +123,21 @@ export async function onCoachAttendingChanged(session: SessionLike, attendingCoa
   }
 }
 
+export async function onSessionChanged(session: SessionLike) {
+  const recipients = await activeAttendeeEmails(session.id);
+  for (const email of recipients) {
+    await sendEmail(
+      email,
+      'Booked session updated',
+      `Your booked session has changed:
+
+${sessionLine(session)}
+
+Please check your Atrium calendar for the latest details.`
+    );
+  }
+}
+
 export async function onRoomBooked(session: SessionLike) {
   const [coach] = await query<{ full_name: string }>('select full_name from person where id = $1', [
     session.coach_id

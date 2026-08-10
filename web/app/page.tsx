@@ -129,7 +129,7 @@ export default async function PublicPage() {
         </article>
         <article>
           <h2>Participant cancellation</h2>
-          <p>Participants follow the same notice tiers. Partial-credit refunds round down to whole credits.</p>
+          <p>96+ hours notice refunds 100%, 48-96 hours 75%, 24-48 hours 50%, and under 24 hours 0%. Partial refunds round down to whole credits. The gentler policy recognises that cancelling a place releases it back to the catalogue without releasing a coach's room cost.</p>
         </article>
         <article>
           <h2>When a coach cancels</h2>

@@ -3,7 +3,7 @@ import { query, withTransaction } from '../db';
 import { requireSession } from '../auth';
 import { hoursOfNotice, refundAmount, refundPercent, roomFee, seatFee } from '../credits';
 import { hasFortyEightHoursNotice, isKnownSessionType, openingHoursViolation, sessionEnd } from '../bookingRules';
-import { coachAttendeeIds, onCoachAttendingChanged, onCoachCancelledSession, onRoomBooked, onRoomCancelled } from '../events';
+import { coachAttendeeIds, onCoachAttendingChanged, onCoachCancelledSession, onRoomBooked, onRoomCancelled, onSessionChanged } from '../events';
 
 const router = Router();
 
@@ -443,6 +443,7 @@ router.patch('/:id', requireSession, async (req, res) => {
     }
 
     const attendingCoachIds = await coachAttendeeIds(id, updated[0].coach_id);
+    await onSessionChanged(updated[0]);
     await onCoachAttendingChanged(updated[0], attendingCoachIds);
 
     res.json(updated[0]);

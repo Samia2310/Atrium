@@ -361,6 +361,61 @@ label {
   padding: 16px;
 }
 
+.profile-link {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  padding: 5px 10px 5px 5px;
+}
+
+.profile-link small { color: var(--muted); }
+.nav-logout { min-height: 34px; border: 1px solid var(--border); background: transparent; color: var(--brand); padding-inline: 12px; }
+.nav-logout:hover { background: var(--brand-soft); color: var(--brand); box-shadow: none; }
+.profile-avatar { display: inline-grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: var(--brand); color: white; font-size: 12px; font-weight: 800; }
+.role-page { animation: fade-up 380ms ease both; }
+.role-hero { display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; padding: 30px 0 34px; }
+.role-hero h1 { color: var(--brand); }
+.credit-balance { display: grid; gap: 4px; min-width: 190px; border-top: 4px solid var(--brand); background: var(--surface-strong); padding: 14px 16px; box-shadow: var(--shadow-soft); }
+.credit-balance span, .credit-balance small { color: var(--muted); }
+.credit-balance strong { color: var(--brand); font-size: 30px; line-height: 1; }
+.role-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+.role-side { border-top: 3px solid var(--brand); background: var(--surface-strong); padding: 18px; box-shadow: var(--shadow-soft); }
+.role-side h2 { margin-bottom: 5px; }
+.profile-facts { display: grid; gap: 4px; margin-top: 22px; border-top: 1px solid var(--border); padding-top: 14px; }
+.profile-facts span { margin-top: 8px; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+.role-section { margin-top: 36px; }
+.compact-heading { align-items: center; margin-bottom: 14px; }
+.compact-heading h2 { margin-bottom: 0; }
+.session-list, .booking-list { display: grid; gap: 10px; }
+.session-card { display: flex; gap: 18px; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-left: 4px solid var(--brand); background: var(--surface-strong); padding: 15px 16px; box-shadow: 0 8px 22px rgb(17 20 17 / 5%); }
+.session-card h3 { margin: 3px 0 4px; font-size: 18px; }
+.session-card p, .session-card small { display: block; margin: 0; color: var(--muted); }
+.session-type { color: var(--brand); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.session-action { display: grid; gap: 5px; min-width: 112px; text-align: right; }
+.session-action span { color: var(--muted); font-size: 12px; }
+.session-action button { min-height: 36px; padding-inline: 10px; }
+.session-form { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; align-items: end; border: 1px solid var(--border); background: var(--surface-strong); padding: 16px; }
+.session-form label { margin-bottom: 0; }
+.session-form button { min-height: 38px; }
+.coach-tools { margin-top: 0; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.row-actions button { min-height: 34px; padding-inline: 11px; }
+.attendee-summary { display: block; margin-top: 6px; color: var(--muted); }
+.agenda { display: grid; gap: 22px; }
+.agenda-day h2 { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; color: var(--brand); font-size: 17px; }
+.agenda-day h2::after { content: ''; height: 1px; flex: 1; background: var(--border); }
+.agenda-list { display: grid; gap: 10px; }
+.agenda-item { display: flex; gap: 18px; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-left: 4px solid #9da79e; background: var(--surface-strong); padding: 15px 16px; box-shadow: 0 8px 22px rgb(17 20 17 / 5%); }
+.agenda-own { border-left-color: var(--brand); }
+.agenda-item h3 { margin: 3px 0 4px; font-size: 18px; }
+.agenda-item p, .agenda-item small { display: block; margin: 0; color: var(--muted); }
+.booking-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin: 0; }
+.booking-row > div { display: grid; gap: 4px; }
+.booking-row button { min-height: 34px; }
+
 .policy-grid article {
   box-shadow: 0 8px 24px rgb(17 20 17 / 6%);
 }
@@ -897,6 +952,16 @@ tbody tr:hover {
   .auth-form h2 {
     font-size: 24px;
   }
+
+  .role-hero, .session-card, .booking-row { align-items: stretch; flex-direction: column; }
+  .agenda-item { align-items: stretch; flex-direction: column; }
+  .session-form { grid-template-columns: 1fr; }
+  .row-actions { display: grid; }
+  .role-grid { grid-template-columns: 1fr; }
+  .credit-balance { width: 100%; }
+  .session-action { text-align: left; }
+  .session-action button { width: 100%; }
+  .profile-link small { display: none; }
 
   .page-shell {
     width: calc(100% - 28px);

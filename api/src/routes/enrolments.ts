@@ -3,7 +3,7 @@ import { withTransaction, query } from '../db';
 import { requireSession } from '../auth';
 import { findOrCreatePersonByEmail, requestPasswordSet } from '../auth';
 import { coachAttendeeIds, onCoachAttendingChanged, onParticipantBooked, onParticipantCancelled } from '../events';
-import { hoursOfNotice, refundAmount, refundPercent } from '../credits';
+import { hoursOfNotice, participantRefundPercent, refundAmount } from '../credits';
 
 const router = Router();
 
@@ -183,7 +183,7 @@ router.post('/:id/cancel', requireSession, async (req, res) => {
       if (enrolment.person_id !== res.locals.personId) throw new HttpError(403, 'not your booking');
       if (enrolment.status === 'cancelled') throw new HttpError(409, 'already cancelled');
 
-      const percent = refundPercent(hoursOfNotice(new Date(), new Date(enrolment.starts_at)));
+      const percent = participantRefundPercent(hoursOfNotice(new Date(), new Date(enrolment.starts_at)));
       const refund = refundAmount(Number(enrolment.credits_charged), percent);
 
       await client.query(

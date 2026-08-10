@@ -29,6 +29,15 @@ export function refundPercent(hoursNotice: number): number {
   return 0;
 }
 
+// Participants get a gentler policy because cancelling a place releases it
+// back to the shared catalogue without forfeiting a coach's room booking.
+export function participantRefundPercent(hoursNotice: number): number {
+  if (hoursNotice >= 96) return 1;
+  if (hoursNotice >= 48) return 0.75;
+  if (hoursNotice >= 24) return 0.5;
+  return 0;
+}
+
 export function refundAmount(fee: number, percent: number): number {
   return Math.floor(fee * percent);
 }

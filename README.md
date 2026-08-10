@@ -48,3 +48,17 @@ If Mailpit is not running, a failed registration is rolled back: neither the new
 npm run build
 npm test
 ```
+
+## Implementation choices and booking rules
+
+- Database access: raw `pg`, kept close to the SQL constraints and transaction boundaries used by the booking rules.
+- Email: Nodemailer over SMTP. Mailpit is the local catch-all transport described above.
+- Scheduler: a self-rescheduling timer recalculates the next midnight in `America/New_York`, so daylight-saving transitions do not use a fixed UTC hour.
+- Assistant: deterministic server-side tools are used for local development and tests; each tool receives the signed-in caller and applies permissions in its query.
+- Validation and testing: TypeScript compiler checks plus Node's built-in test runner.
+
+Credits are integers. The fee schedule is: `short` room 30 / seat 15, `standard` room 40 / seat 20, and `intensive` room 120 / seat 60. Intensive sessions teach for 180 minutes and hold the room for 210 minutes.
+
+Coach cancellation refunds the room fee at 100% with 96+ hours notice, 50% at 48-96 hours, 25% at 24-48 hours, and 0% under 24 hours. Coaches must book at least 48 hours ahead.
+
+Participant cancellation refunds 100% at 96+ hours, 75% at 48-96 hours, 50% at 24-48 hours, and 0% under 24 hours. Partial refunds round down to whole credits. This policy is more forgiving because a participant cancellation releases a seat back to the catalogue without releasing the coach's room cost. If a coach cancels, every affected participant receives a full seat-fee refund regardless of notice.
