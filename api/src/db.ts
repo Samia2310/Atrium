@@ -6,7 +6,10 @@ config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 10
+  max: 10,
+  // Render's managed Postgres requires SSL; local dev Postgres usually
+  // doesn't support it at all, so only turn it on outside development.
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
 });
 
 export async function query<T extends QueryResultRow = any>(

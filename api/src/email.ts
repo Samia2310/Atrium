@@ -1,82 +1,47 @@
-import net from 'node:net';
+import nodemailer from 'nodemailer';
 
 type SentEmail = { to: string; subject: string; delivered: boolean; error?: string };
-
-const TIMEOUT_MS = 5000;
 
 function env(name: string, fallback = ''): string {
   return process.env[name] || fallback;
 }
 
-function smtpLine(value: string): string {
-  return value.replace(/\r?\n/g, ' ').trim();
-}
+let cachedTransport: nodemailer.Transporter | null = null;
 
-function dotEscape(value: string): string {
-  return value.replace(/^\./gm, '..');
-}
+function transport(): nodemailer.Transporter {
+  if (cachedTransport) return cachedTransport;
 
-async function sendSmtp(to: string, subject: string, text: string): Promise<void> {
-  const host = env('SMTP_HOST', 'localhost');
-  const port = Number(env('SMTP_PORT', '1025'));
-  const from = env('MAIL_FROM', 'no-reply@atrium.local');
-  const socket = net.createConnection({ host, port });
-  socket.setEncoding('utf8');
-  socket.setTimeout(TIMEOUT_MS);
-
-  let buffer = '';
-  const readResponse = () => new Promise<string>((resolve, reject) => {
-    const onData = (chunk: string) => {
-      buffer += chunk;
-      const lines = buffer.split(/\r?\n/).filter(Boolean);
-      const last = lines[lines.length - 1];
-      if (last && /^\d{3} /.test(last)) {
-        socket.off('data', onData);
-        const response = buffer;
-        buffer = '';
-        if (/^[245]\d\d /.test(last)) resolve(response);
-        else reject(new Error(last));
-      }
-    };
-    socket.on('data', onData);
-    socket.once('error', reject);
-    socket.once('timeout', () => reject(new Error('SMTP timeout')));
+  const port = Number(env('SMTP_PORT', '587'));
+  cachedTransport = nodemailer.createTransport({
+    host: env('SMTP_HOST', 'localhost'),
+    port,
+    // Port 465 is implicit TLS; anything else (587, 25) negotiates
+    // STARTTLS after connecting in plaintext. nodemailer picks the
+    // right handshake automatically from this flag.
+    secure: port === 465,
+    auth: env('SMTP_USER')
+      ? { user: env('SMTP_USER'), pass: env('SMTP_PASS') }
+      : undefined
   });
-
-  const write = async (command: string) => {
-    socket.write(command);
-    await readResponse();
-  };
-
-  await readResponse();
-  await write('HELO atrium.local\r\n');
-  await write(`MAIL FROM:<${from}>\r\n`);
-  await write(`RCPT TO:<${to}>\r\n`);
-  await write('DATA\r\n');
-  socket.write([
-    `From: ${smtpLine(from)}`,
-    `To: ${smtpLine(to)}`,
-    `Subject: ${smtpLine(subject)}`,
-    'Content-Type: text/plain; charset=utf-8',
-    '',
-    dotEscape(text),
-    '.'
-  ].join('\r\n') + '\r\n');
-  await readResponse();
-  socket.write('QUIT\r\n');
-  socket.end();
+  return cachedTransport;
 }
 
 export async function sendEmail(to: string, subject: string, text: string): Promise<SentEmail> {
   if (!to) return { to, subject, delivered: false, error: 'missing recipient' };
 
+  // Local dev convenience: log instead of sending, no SMTP server needed at all.
   if (env('MAIL_TRANSPORT', 'smtp') === 'console') {
     console.log(`[email] to=${to} subject=${subject}\n${text}`);
     return { to, subject, delivered: true };
   }
 
   try {
-    await sendSmtp(to, subject, text);
+    await transport().sendMail({
+      from: env('MAIL_FROM', 'no-reply@atrium.local'),
+      to,
+      subject,
+      text
+    });
     return { to, subject, delivered: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
