@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
 export default function Assistant() {
@@ -8,6 +8,11 @@ export default function Assistant() {
   const [message, setMessage] = useState('');
   const [log, setLog] = useState<{ role: 'me' | 'assistant'; text: string }[]>([]);
   const [busy, setBusy] = useState(false);
+  const logRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
+  }, [log, busy]);
 
   async function send() {
     if (!message.trim() || busy) return;
@@ -21,42 +26,77 @@ export default function Assistant() {
         body: JSON.stringify({ message: text })
       });
       setLog((items) => [...items, { role: 'assistant', text: reply }]);
-    } catch {
-      setLog((items) => [...items, { role: 'assistant', text: 'Sorry, something went wrong.' }]);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : '';
+      setLog((items) => [
+        ...items,
+        {
+          role: 'assistant',
+          text: detail
+            ? `I could not reach the Atrium API. ${detail}`
+            : 'I could not reach the Atrium API. Please check that the API server is running.'
+        }
+      ]);
     } finally {
       setBusy(false);
     }
   }
 
+  function askSuggestion(text: string) {
+    if (busy) return;
+    setMessage(text);
+  }
+
   return (
     <aside className="assistant">
       {open ? (
-        <div className="assistant-panel">
+        <div className="assistant-panel" role="dialog" aria-label="Atrium assistant">
           <header>
-            <strong>Assistant</strong>
-            <button type="button" onClick={() => setOpen(false)}>Close</button>
+            <div>
+              <strong>Assistant</strong>
+              <span>Ask about sessions, credits and bookings.</span>
+            </div>
+            <button type="button" className="button ghost" onClick={() => setOpen(false)}>Close</button>
           </header>
-          <div className="assistant-log">
-            {log.length === 0 && <p className="muted">Ask about sessions, bookings or credits.</p>}
+          <div className="assistant-log" ref={logRef}>
+            {log.length === 0 && (
+              <div className="assistant-empty">
+                <strong>How can I help?</strong>
+                <p className="muted">Try one of these or type your own question.</p>
+                <div className="assistant-suggestions">
+                  <button type="button" onClick={() => askSuggestion('Show me fitness sessions')}>Fitness sessions</button>
+                  <button type="button" onClick={() => askSuggestion('What is my credit balance?')}>Credit balance</button>
+                  <button type="button" onClick={() => askSuggestion('What are my bookings?')}>My bookings</button>
+                </div>
+              </div>
+            )}
             {log.map((item, index) => (
-              <p key={index} className={item.role === 'me' ? 'bubble mine' : 'bubble'}>{item.text}</p>
+              <p key={index} className={item.role === 'me' ? 'bubble mine' : 'bubble'}>
+                {item.text}
+              </p>
             ))}
-            {busy && <p className="muted">Thinking...</p>}
+            {busy && <p className="bubble thinking">Thinking...</p>}
           </div>
-          <div className="assistant-form">
+          <form
+            className="assistant-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              send();
+            }}
+          >
             <input
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') send();
-              }}
               placeholder="Ask Atrium"
+              disabled={busy}
             />
-            <button type="button" onClick={send}>Send</button>
-          </div>
+            <button type="submit" disabled={busy}>{busy ? 'Sending' : 'Send'}</button>
+          </form>
         </div>
       ) : (
-        <button type="button" onClick={() => setOpen(true)}>Ask</button>
+        <button type="button" className="assistant-launcher" onClick={() => setOpen(true)}>
+          Ask Atrium
+        </button>
       )}
     </aside>
   );

@@ -28,6 +28,20 @@ function requestedDiscipline(message: string): string | undefined {
   return disciplines.find((discipline) => message.toLowerCase().includes(discipline));
 }
 
+function isGreeting(message: string): boolean {
+  return /^(hi|hello|hey|helo|heloo|good morning|good afternoon|good evening)\b/i.test(message.trim());
+}
+
+function isCapabilityQuestion(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('can i ask') ||
+    lower.includes('what can you do') ||
+    lower.includes('help') ||
+    lower.includes('question')
+  );
+}
+
 function formatSessions(rows: any[]): string {
   if (rows.length === 0) return 'I could not find any upcoming sessions that match.';
   return rows.slice(0, 5).map((row) => {
@@ -44,6 +58,17 @@ function formatSessions(rows: any[]): string {
 
 async function answerFromTools(message: string, caller: Caller, allowedTools: ToolName[]): Promise<string> {
   const lower = message.toLowerCase();
+
+  if (isGreeting(message)) {
+    return 'Hello. I can help you find upcoming sessions, check bookings and answer credit questions for your Atrium account.';
+  }
+
+  if (isCapabilityQuestion(message)) {
+    const privateHelp = caller.kind === 'anonymous'
+      ? 'Sign in first if you want me to check your bookings or credit balance.'
+      : 'You can ask about your bookings, credits or upcoming sessions.';
+    return `Yes. Ask me about Atrium sessions, coaches, rooms, bookings or credits. ${privateHelp}`;
+  }
 
   if ((lower.includes('credit') || lower.includes('balance')) && allowedTools.includes('myCreditBalance')) {
     const result = await tools.myCreditBalance(caller, {});

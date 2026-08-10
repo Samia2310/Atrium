@@ -10,11 +10,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <nav>
-          <a href="/">Atrium</a>
-          <a href="/participant">Participant</a>
-          <a href="/coach">Coach</a>
-          <a href="/admin">Dashboard</a>
-          <a href="/admin/sessions">Calendar</a>
+          <span className="brand-lockup" aria-label="Atrium">
+            <span className="brand-mark" aria-hidden="true">A</span>
+            <span className="brand-name">Atrium</span>
+          </span>
+          <a href="/#sessions">Sessions</a>
+          <a href="/#policies">Policies</a>
           <a href="/login">Log in</a>
         </nav>
         {children}

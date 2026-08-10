@@ -220,6 +220,7 @@ export default function AdminSessions() {
           <input
             required
             type="time"
+            placeholder="07:00"
             value={startTime}
             onChange={(event) => setStartTime(event.target.value)}
           />
@@ -247,7 +248,7 @@ export default function AdminSessions() {
         <label>
           <span>Room</span>
           <select required value={roomId} onChange={(event) => setRoomId(event.target.value)}>
-            <option value=""></option>
+            <option value="">Select a room</option>
             {rooms.map((room) => (
               <option key={room.id} value={room.id}>
                 {room.name}
@@ -258,7 +259,7 @@ export default function AdminSessions() {
         <label>
           <span>Coach</span>
           <select required value={coachId} onChange={(event) => setCoachId(event.target.value)}>
-            <option value=""></option>
+            <option value="">Select a coach</option>
             {people.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.full_name}

@@ -57,6 +57,8 @@ function SetPasswordForm() {
             required
             minLength={8}
             type="password"
+            autoComplete="new-password"
+            placeholder="At least 8 characters"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
@@ -67,6 +69,8 @@ function SetPasswordForm() {
             required
             minLength={8}
             type="password"
+            autoComplete="new-password"
+            placeholder="Re-enter your password"
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
           />

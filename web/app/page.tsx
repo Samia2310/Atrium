@@ -44,21 +44,67 @@ function centreTime(value: string) {
 
 export default async function PublicPage() {
   const result = await getUpcomingSessions();
+  const previewSessions = result.ok ? result.sessions.slice(0, 4) : [];
 
   return (
-    <main className="page-shell">
-      <section className="hero">
-        <div>
+    <main>
+      <section className="home-hero">
+        <div className="home-hero-copy">
           <p className="eyebrow">Atrium Coaching Centre</p>
-          <h1>Book coaching sessions with clear credit rules.</h1>
+          <h1>Focused coaching, clear booking, calm scheduling.</h1>
           <p className="lede">
-            Atrium runs Monday to Saturday, 07:00 to 21:00 America/New_York. Rooms are closed on Sundays.
+            Plan sessions across twelve rooms, spend credits with confidence and keep every booking visible to the right people.
           </p>
+          <div className="hero-actions">
+            <a className="button" href="/login">Log in</a>
+            <a className="button secondary" href="#sessions">View schedule</a>
+          </div>
         </div>
-        <a className="button" href="/login">Sign in</a>
+        <div className="home-hero-panel" aria-label="Atrium schedule preview">
+          <div className="hero-panel-top">
+            <span>Today at Atrium</span>
+            <strong>{previewSessions.length || 0} upcoming</strong>
+          </div>
+          <div className="hero-panel-list">
+            {previewSessions.length > 0 ? previewSessions.map((session) => (
+              <article key={session.id}>
+                <strong>{session.discipline}</strong>
+                <span>{centreTime(session.starts_at)}</span>
+                <small>{session.room_name} with {session.coach_name}</small>
+              </article>
+            )) : (
+              <p className="muted">Live sessions appear here when the API is available.</p>
+            )}
+          </div>
+        </div>
       </section>
 
-      <section className="policy-grid" aria-label="Booking policies">
+      <section className="home-band">
+        <div className="home-metrics" aria-label="Atrium highlights">
+          <article>
+            <strong>12</strong>
+            <span>coaching rooms</span>
+          </article>
+          <article>
+            <strong>6</strong>
+            <span>open days weekly</span>
+          </article>
+          <article>
+            <strong>4000</strong>
+            <span>starting participant credits</span>
+          </article>
+        </div>
+      </section>
+
+      <section className="page-shell home-section" id="policies">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Before You Book</p>
+            <h2>Simple rules, shown upfront.</h2>
+          </div>
+          <p>Opening hours are Monday to Saturday, 07:00 to 21:00 America/New_York. Rooms are closed on Sundays.</p>
+        </div>
+        <div className="policy-grid" aria-label="Booking policies">
         <article>
           <h2>Fees</h2>
           <p>Short: room 30 credits, seat 15 credits. Standard: room 40, seat 20. Intensive: room 120, seat 60.</p>
@@ -75,11 +121,15 @@ export default async function PublicPage() {
           <h2>When a coach cancels</h2>
           <p>Every affected participant gets a full seat refund because the cancellation was outside their control.</p>
         </article>
+        </div>
       </section>
 
-      <section>
+      <section className="page-shell home-section" id="sessions">
         <div className="section-heading">
-          <h2>Upcoming Sessions</h2>
+          <div>
+            <p className="eyebrow">Live Schedule</p>
+            <h2>Upcoming sessions</h2>
+          </div>
           <p>Times are shown in the centre timezone.</p>
         </div>
 

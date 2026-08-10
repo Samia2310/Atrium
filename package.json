@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "migrate": "node scripts/migrate.mjs",
+    "dev": "node scripts/dev.mjs",
     "dev:api": "npm --workspace api run dev",
     "dev:web": "npm --workspace web run dev",
     "build": "npm --workspace api run build && npm --workspace web run build",

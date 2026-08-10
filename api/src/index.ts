@@ -21,10 +21,38 @@ import assistantRoutes from './routes/assistant';
 import { startScheduler } from './jobs/scheduler';
 
 const app = express();
+const localhostOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3002'
+];
+
+const allowedWebOrigins = new Set(
+  [
+    process.env.WEB_BASE_URL,
+    process.env.API_BASE_URL,
+    process.env.NEXT_PUBLIC_API_BASE_URL,
+    ...localhostOrigins
+  ]
+    .filter(Boolean)
+    .join(',')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
 
 app.use(
   cors({
-    origin: process.env.WEB_BASE_URL || 'http://localhost:3000',
+    origin(origin, callback) {
+      if (!origin || allowedWebOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('not allowed by cors'));
+    },
     credentials: true
   })
 );
