@@ -339,6 +339,11 @@ router.patch('/:id', requireSession, async (req, res) => {
       return;
     }
 
+    if (person.kind === 'coach' && !hasFortyEightHoursNotice(nextStartsAt)) {
+      res.status(400).json({ error: 'coaches must book rooms at least 48 hours before the session starts' });
+      return;
+    }
+
     const assignments: string[] = [];
     const params: unknown[] = [];
 

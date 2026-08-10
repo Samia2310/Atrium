@@ -10,6 +10,7 @@ type CalendarItem = {
   id: number;
   discipline: string;
   session_type: string;
+  room_fee_credits: number;
   starts_at: string;
   ends_at: string;
   room_name: string;
@@ -21,11 +22,22 @@ type CalendarItem = {
 
 const disciplines = ['fitness', 'lifestyle', 'financial', 'nutrition', 'career', 'mindfulness'];
 const sessionTypes = ['short', 'standard', 'intensive'];
+const roomFees: Record<string, number> = { short: 30, standard: 40, intensive: 120 };
 
 function calendarWindow() {
   const from = new Date();
   const to = new Date(from.getTime() + 30 * 24 * 60 * 60 * 1000);
   return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function groupByDay(items: CalendarItem[]) {
+  return items.reduce<Record<string, CalendarItem[]>>((groups, item) => {
+    const day = new Date(item.starts_at).toLocaleDateString('en-US', {
+      timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric'
+    });
+    (groups[day] ||= []).push(item);
+    return groups;
+  }, {});
 }
 
 export default function CoachDashboard() {
@@ -88,7 +100,7 @@ export default function CoachDashboard() {
   }
 
   const own = items.filter((item) => item.is_own);
-  const busy = items.filter((item) => !item.is_own);
+  const groupedCalendar = groupByDay(items);
 
   return (
     <main className="page-shell role-page">
@@ -111,7 +123,7 @@ export default function CoachDashboard() {
           <label><span>Date</span><input required type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
           <label><span>Starts</span><input required type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} /></label>
           <label><span>Discipline</span><select value={discipline} onChange={(event) => setDiscipline(event.target.value)}>{disciplines.map((value) => <option key={value}>{value}</option>)}</select></label>
-          <label><span>Type</span><select value={sessionType} onChange={(event) => setSessionType(event.target.value)}>{sessionTypes.map((value) => <option key={value}>{value}</option>)}</select></label>
+          <label><span>Type</span><select value={sessionType} onChange={(event) => setSessionType(event.target.value)}>{sessionTypes.map((value) => <option key={value}>{value}</option>)}</select><small className="muted">Room fee: {roomFees[sessionType]} credits</small></label>
           <label><span>Room</span><select required value={roomId} onChange={(event) => setRoomId(event.target.value)}><option value="">Select a room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name} ({room.capacity} places)</option>)}</select></label>
           <button disabled={saving} type="submit">{saving ? 'Saving...' : editingId ? 'Save changes' : 'Book room'}</button>
         </form>
@@ -123,7 +135,7 @@ export default function CoachDashboard() {
           {own.length === 0 && <p className="notice">No coached sessions in the next 30 days.</p>}
           {own.map((item) => (
             <article className="list-row" key={item.id}>
-              <div><strong>{item.discipline} / {item.session_type}</strong><span>{centreTime(item.starts_at)} in {item.room_name}</span><small className="attendee-summary">{item.attendees?.length ? `${item.attendees.length} attendee(s): ${item.attendees.map((attendee) => `${attendee.full_name} (${attendee.status})`).join(', ')}` : 'No attendees yet'}</small></div>
+              <div><strong>{item.discipline} / {item.session_type}</strong><span>{centreTime(item.starts_at)} in {item.room_name}</span><small>Room fee: {item.room_fee_credits} credits</small><small className="attendee-summary">{item.attendees?.length ? `${item.attendees.length} attendee(s): ${item.attendees.map((attendee) => `${attendee.full_name} (${attendee.status})`).join(', ')}` : 'No attendees yet'}</small></div>
               <div className="row-actions"><button className="button secondary" disabled={saving} onClick={() => editSession(item)}>Reschedule</button><button disabled={saving} onClick={() => cancelSession(item.id)}>Cancel session</button></div>
             </article>
           ))}
@@ -133,14 +145,27 @@ export default function CoachDashboard() {
           <div className="profile-facts"><span>Starting balance</span><strong>2000 credits</strong><span>Role access</span><strong>Teach sessions and view your calendar</strong></div>
           <p className="muted">{rooms.length} rooms are available to centre staff.</p>
         </div>
-        <div className="role-main">
-          <h2>Busy Room Blocks</h2>
-          {busy.length === 0 && <p className="notice">No other busy blocks in this window.</p>}
-          {busy.slice(0, 12).map((item) => (
-            <article className="list-row muted-row" key={item.id}>
-              <strong>{item.is_attending ? 'Attending' : 'Busy'}</strong>
-              <span>{centreTime(item.starts_at)} in {item.room_name}</span>
-            </article>
+      </section>
+      <section className="role-section">
+        <div className="section-heading compact-heading"><div><p className="eyebrow">Availability</p><h2>Open Calendar</h2></div><span className="muted">Next 30 days · America/New_York</span></div>
+        {Object.keys(groupedCalendar).length === 0 && <p className="notice">No sessions in the next 30 days.</p>}
+        <div className="agenda" aria-label="Coach open calendar">
+          {Object.entries(groupedCalendar).map(([day, dayItems]) => (
+            <section className="agenda-day" key={day}>
+              <h2>{day}</h2>
+              <div className="agenda-list">
+                {dayItems.map((item) => (
+                  <article className={`agenda-item ${item.is_own ? 'agenda-own' : ''}`} key={item.id}>
+                    <div>
+                      <span className="session-type">{item.is_own ? 'Your session' : 'Busy room block'}</span>
+                      <h3>{item.discipline}</h3>
+                      <p>{centreTime(item.starts_at)} to {centreTime(item.ends_at)}</p>
+                      <small>{item.room_name} · {item.session_type}</small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       </section>
