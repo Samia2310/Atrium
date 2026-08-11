@@ -18,6 +18,46 @@ In a second terminal, start the web app:
 npm run dev:web
 ```
 
+## Project Structure
+
+```text
+Atrium/
+├── api/                         # Backend (Node.js/TypeScript)
+│   ├── dist/                    # Compiled backend output
+│   ├── src/
+│   │   ├── jobs/                # Background and scheduled jobs
+│   │   ├── routes/              # API route handlers
+│   │   ├── auth.ts              # Authentication and session management
+│   │   ├── bookingRules.ts      # Booking, cancellation and refund rules
+│   │   ├── credits.ts           # Credit, fee and refund calculations
+│   │   ├── db.ts                # PostgreSQL database client
+│   │   ├── email.ts             # Nodemailer/SMTP email handling
+│   │   ├── events.ts            # Event handling
+│   │   ├── index.ts             # API entry point
+│   │   └── nodemailer.d.ts      # Nodemailer type declarations
+│   ├── test/                    # Backend test suite
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── web/                         # Frontend (Next.js/TypeScript)
+│   ├── app/                     # Next.js App Router pages
+│   ├── calendar/                # Calendar-related components and views
+│   ├── components/              # Shared UI components
+│   ├── lib/                     # Frontend utilities and helpers
+│   ├── middleware.ts            # Route middleware and access control
+│   ├── next-env.d.ts
+│   ├── next.config.mjs
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── assignment/                  # Assignment brief
+├── migrations/                  # Database schema, seed and migration files
+├── scripts/                    # Development and migration scripts
+├── package.json                # Root workspace configuration
+├── env.example                  # Example environment configuration
+├── README.md
+└── INSTRUCTIONS.md
+
 Open http://localhost:3000. The seeded administrator credentials are listed in `env.example`.
 
 ## Local email with Mailpit
