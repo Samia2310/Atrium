@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
-import Assistant from '@/components/Assistant';
+import RoleSubNav from '@/components/RoleSubNav';
 
 type Me = { kind: 'participant' | 'coach' | 'admin'; full_name: string; credits?: string };
 type CalendarItem = {
@@ -103,6 +103,7 @@ export default function CalendarPage() {
       </section>
       {notice && <p className="notice success">{notice}</p>}
       {error && <p className="notice error">{error}</p>}
+      <RoleSubNav role={me.kind} active="calendar" />
       {Object.keys(grouped).length === 0 && <p className="notice">No sessions in the next 30 days.</p>}
       <section className="agenda" aria-label="Upcoming calendar">
         {Object.entries(grouped).map(([day, dayItems]) => (
@@ -121,7 +122,6 @@ export default function CalendarPage() {
           </section>
         ))}
       </section>
-      <Assistant />
     </main>
   );
 }

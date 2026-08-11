@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
-import Assistant from '@/components/Assistant';
+import RoleCalendar from '@/components/RoleCalendar';
+import RoleSubNav from '@/components/RoleSubNav';
 
 type Me = { full_name: string; credits: string };
 type Room = { id: number; name: string; capacity: number };
@@ -53,8 +54,10 @@ export default function CoachDashboard() {
   const [discipline, setDiscipline] = useState(disciplines[0]);
   const [sessionType, setSessionType] = useState(sessionTypes[1]);
   const [roomId, setRoomId] = useState('');
+  const [view, setView] = useState<'dashboard' | 'available' | 'booked' | 'calendar'>('dashboard');
 
   useEffect(() => { load().catch((err) => setError(err.message)); }, []);
+  useEffect(() => { const requestedView = new URLSearchParams(window.location.search).get('view'); if (requestedView === 'available' || requestedView === 'booked' || requestedView === 'calendar') setView(requestedView); }, []);
   async function load() {
     const [person, roomRows, calendar] = await Promise.all([
       apiFetch<Me>('/api/me'),
@@ -100,7 +103,6 @@ export default function CoachDashboard() {
   }
 
   const own = items.filter((item) => item.is_own);
-  const groupedCalendar = groupByDay(items);
 
   return (
     <main className="page-shell role-page">
@@ -116,7 +118,11 @@ export default function CoachDashboard() {
       {error && <p className="notice error">{error}</p>}
       {notice && <p className="notice success">{notice}</p>}
 
-      <section className="role-section coach-tools">
+      <RoleSubNav role="coach" active={view} />
+
+      {view === 'dashboard' && <section className="stat-grid"><article className="stat-card"><span>Available credits</span><strong>{me?.credits || '0'}</strong><div className="stat-bar"><i style={{ width: `${Math.min(Number(me?.credits || 0) / 20, 100)}%` }} /></div></article><article className="stat-card"><span>Your sessions</span><strong>{own.length}</strong><div className="stat-donut" style={{ '--stat-progress': `${Math.min(own.length * 15, 100)}%` } as React.CSSProperties}><b>{own.length}</b></div></article><article className="stat-card"><span>Rooms available</span><strong>{rooms.length}</strong><div className="stat-bars"><i /><i /><i /></div></article></section>}
+
+      {view === 'available' && <section className="role-section coach-tools">
         <div className="section-heading compact-heading"><div><p className="eyebrow">Room booking</p><h2>{editingId ? 'Reschedule your session' : 'Create a session'}</h2></div>{editingId && <button className="button secondary" type="button" onClick={() => setEditingId(null)}>Cancel edit</button>}</div>
         <p className="muted">Sessions must be Monday to Saturday, 07:00-21:00, and coaches need at least 48 hours notice.</p>
         <form className="session-form" onSubmit={saveSession}>
@@ -127,9 +133,9 @@ export default function CoachDashboard() {
           <label><span>Room</span><select required value={roomId} onChange={(event) => setRoomId(event.target.value)}><option value="">Select a room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name} ({room.capacity} places)</option>)}</select></label>
           <button disabled={saving} type="submit">{saving ? 'Saving...' : editingId ? 'Save changes' : 'Book room'}</button>
         </form>
-      </section>
+      </section>}
 
-      <section className="role-grid">
+      {view === 'booked' && <section className="role-grid">
         <div className="role-main">
           <h2>Your Sessions</h2>
           {own.length === 0 && <p className="notice">No coached sessions in the next 30 days.</p>}
@@ -145,31 +151,8 @@ export default function CoachDashboard() {
           <div className="profile-facts"><span>Starting balance</span><strong>2000 credits</strong><span>Role access</span><strong>Teach sessions and view your calendar</strong></div>
           <p className="muted">{rooms.length} rooms are available to centre staff.</p>
         </div>
-      </section>
-      <section className="role-section">
-        <div className="section-heading compact-heading"><div><p className="eyebrow">Availability</p><h2>Open Calendar</h2></div><span className="muted">Next 30 days · America/New_York</span></div>
-        {Object.keys(groupedCalendar).length === 0 && <p className="notice">No sessions in the next 30 days.</p>}
-        <div className="agenda" aria-label="Coach open calendar">
-          {Object.entries(groupedCalendar).map(([day, dayItems]) => (
-            <section className="agenda-day" key={day}>
-              <h2>{day}</h2>
-              <div className="agenda-list">
-                {dayItems.map((item) => (
-                  <article className={`agenda-item ${item.is_own ? 'agenda-own' : ''}`} key={item.id}>
-                    <div>
-                      <span className="session-type">{item.is_own ? 'Your session' : 'Busy room block'}</span>
-                      <h3>{item.discipline}</h3>
-                      <p>{centreTime(item.starts_at)} to {centreTime(item.ends_at)}</p>
-                      <small>{item.room_name} · {item.session_type}</small>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      </section>
-      <Assistant />
+      </section>}
+      {view === 'calendar' && <section className="role-section"><div className="section-heading compact-heading"><div><p className="eyebrow">Availability</p><h2>Calendar</h2></div><span className="muted">Your sessions and room blocks</span></div><RoleCalendar role="coach" items={items} /></section>}
     </main>
   );
 }

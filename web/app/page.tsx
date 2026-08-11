@@ -1,4 +1,3 @@
-import Assistant from '@/components/Assistant';
 
 export const dynamic = 'force-dynamic';
 
@@ -192,7 +191,6 @@ export default async function PublicPage() {
         )}
       </section>
 
-      <Assistant />
     </main>
   );
 }

@@ -35,6 +35,7 @@ export default function Login() {
   const [mode, setMode] = useState<AuthMode>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [kind, setKind] = useState<PublicKind>('participant');
   const [notice, setNotice] = useState('');
@@ -48,6 +49,7 @@ export default function Login() {
     setSetupLink('');
     setError('');
     setPassword('');
+    setShowPassword(false);
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -216,15 +218,30 @@ export default function Login() {
           {mode === 'sign-in' && (
             <label>
               <span>Password</span>
-              <input
-                required
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
+              <span className="password-field">
+                <input
+                  required
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                    {showPassword && <path className="password-slash" d="m4 4 16 16" />}
+                  </svg>
+                </button>
+              </span>
             </label>
           )}
 

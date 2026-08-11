@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
-import Assistant from '@/components/Assistant';
 
 type Me = { id: number; kind: 'participant' | 'coach' | 'admin'; full_name: string };
 
@@ -31,7 +30,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
       </header>
       <main className="p-4">{children}</main>
-      <Assistant />
     </div>
   );
 }

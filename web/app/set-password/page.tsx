@@ -20,6 +20,8 @@ function SetPasswordForm() {
   const token = searchParams.get('token') || '';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -64,27 +66,57 @@ function SetPasswordForm() {
         {error && <p className="notice error">{error}</p>}
         <label>
           <span>Password</span>
-          <input
-            required
-            minLength={8}
-            type="password"
-            autoComplete="new-password"
-            placeholder="At least 8 characters"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
+          <span className="password-field">
+            <input
+              required
+              minLength={8}
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((visible) => !visible)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                <circle cx="12" cy="12" r="2.5" />
+                {showPassword && <path className="password-slash" d="m4 4 16 16" />}
+              </svg>
+            </button>
+          </span>
         </label>
         <label>
           <span>Confirm password</span>
-          <input
-            required
-            minLength={8}
-            type="password"
-            autoComplete="new-password"
-            placeholder="Re-enter your password"
-            value={confirm}
-            onChange={(event) => setConfirm(event.target.value)}
-          />
+          <span className="password-field">
+            <input
+              required
+              minLength={8}
+              type={showConfirm ? 'text' : 'password'}
+              autoComplete="new-password"
+              placeholder="Re-enter your password"
+              value={confirm}
+              onChange={(event) => setConfirm(event.target.value)}
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              aria-label={showConfirm ? 'Hide password' : 'Show password'}
+              aria-pressed={showConfirm}
+              onClick={() => setShowConfirm((visible) => !visible)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                <circle cx="12" cy="12" r="2.5" />
+                {showConfirm && <path className="password-slash" d="m4 4 16 16" />}
+              </svg>
+            </button>
+          </span>
         </label>
         <button type="submit" disabled={busy || !token}>{busy ? 'Saving...' : 'Set password'}</button>
       </form>

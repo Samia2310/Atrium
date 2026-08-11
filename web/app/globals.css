@@ -157,6 +157,54 @@ input::placeholder {
   color: #8a8f86;
 }
 
+.password-field {
+  position: relative;
+  display: block;
+}
+
+.password-field input {
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  min-width: 34px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  transform: translateY(-50%);
+  box-shadow: none;
+}
+
+.password-toggle svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.password-toggle .password-slash {
+  stroke-width: 2.2;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  background: transparent;
+  color: var(--brand);
+  box-shadow: none;
+  transform: translateY(-50%);
+}
+
 label {
   display: grid;
   gap: 6px;
@@ -376,6 +424,16 @@ label {
 .nav-logout:hover { background: var(--brand-soft); color: var(--brand); box-shadow: none; }
 .profile-avatar { display: inline-grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: var(--brand); color: white; font-size: 12px; font-weight: 800; }
 .role-page { animation: fade-up 380ms ease both; }
+.role-subnav { position: sticky; z-index: 5; top: 0; display: flex; gap: 4px; margin: 4px 0 28px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 92%, transparent); padding-top: 4px; }
+.role-subnav a { min-height: 42px; border-bottom: 3px solid transparent; color: var(--muted); padding: 11px 16px 8px; text-decoration: none; }
+.role-subnav a:hover, .role-subnav a.active { border-bottom-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
+.stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.stat-card { position: relative; min-height: 150px; overflow: hidden; border: 1px solid var(--border); border-top: 4px solid var(--brand); background: var(--surface-strong); padding: 18px; box-shadow: var(--shadow-soft); }
+.stat-card > span { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+.stat-card > strong { display: block; margin-top: 9px; color: var(--brand); font-size: 32px; line-height: 1; }
+.stat-bar { height: 8px; margin-top: 26px; background: var(--brand-soft); }.stat-bar i { display: block; height: 100%; background: var(--brand); }
+.stat-donut { display: grid; width: 58px; height: 58px; margin-top: 16px; place-items: center; border-radius: 50%; background: conic-gradient(var(--brand) var(--stat-progress), var(--brand-soft) 0); }.stat-donut::after { position: absolute; width: 42px; height: 42px; border-radius: 50%; background: var(--surface-strong); content: ''; }.stat-donut b { z-index: 1; font-size: 16px; }
+.stat-bars { display: flex; gap: 7px; align-items: end; height: 42px; margin-top: 13px; }.stat-bars i { display: block; width: 18px; background: var(--brand); }.stat-bars i:nth-child(1) { height: 45%; opacity: .45; }.stat-bars i:nth-child(2) { height: 75%; opacity: .7; }.stat-bars i:nth-child(3) { height: 100%; }
 .role-hero { display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; padding: 30px 0 34px; }
 .role-hero h1 { color: var(--brand); }
 .credit-balance { display: grid; gap: 4px; min-width: 190px; border-top: 4px solid var(--brand); background: var(--surface-strong); padding: 14px 16px; box-shadow: var(--shadow-soft); }
@@ -412,6 +470,7 @@ label {
 .agenda-own { border-left-color: var(--brand); }
 .agenda-item h3 { margin: 3px 0 4px; font-size: 18px; }
 .agenda-item p, .agenda-item small { display: block; margin: 0; color: var(--muted); }
+.role-calendar { overflow: hidden; border: 1px solid var(--border); background: var(--surface-strong); box-shadow: var(--shadow-soft); }.calendar-toolbar { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); background: var(--brand-soft); padding: 12px 16px; color: var(--muted); font-size: 12px; }.calendar-toolbar strong { color: var(--brand); font-size: 14px; }.calendar-scroll { overflow-x: auto; }.role-calendar-grid { display: grid; min-width: 920px; grid-template-columns: 72px repeat(7, minmax(110px, 1fr)); }.calendar-corner, .calendar-day-header, .calendar-hour, .calendar-cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }.calendar-day-header { display: grid; gap: 2px; min-height: 54px; padding: 10px 8px; color: var(--brand); text-align: center; }.calendar-day-header span { color: var(--muted); font-size: 11px; }.calendar-row { display: contents; }.calendar-hour { grid-column: 1; padding: 10px 7px; color: var(--muted); font-size: 11px; text-align: right; }.calendar-cell { min-height: 68px; padding: 5px; }.calendar-entry { display: grid; width: 100%; gap: 2px; border: 0; border-left: 3px solid #9da79e; border-radius: 0; background: #f1f3f0; color: var(--ink); padding: 7px; text-align: left; }.calendar-entry + .calendar-entry { margin-top: 4px; }.calendar-entry-active { border-left-color: var(--brand); background: var(--brand-soft); }.calendar-entry strong { font-size: 12px; }.calendar-entry span, .calendar-entry small { color: var(--muted); font-size: 10px; }
 .booking-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin: 0; }
 .booking-row > div { display: grid; gap: 4px; }
 .booking-row button { min-height: 34px; }
@@ -737,9 +796,10 @@ tbody tr:hover {
 
 .assistant {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 20;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 100;
+  isolation: isolate;
 }
 
 .assistant-launcher {
@@ -955,6 +1015,9 @@ tbody tr:hover {
   }
 
   .role-hero, .session-card, .booking-row { align-items: stretch; flex-direction: column; }
+  .role-subnav { overflow-x: auto; margin-inline: -4px; }
+  .role-subnav a { flex: 0 0 auto; padding-inline: 12px; }
+  .stat-grid { grid-template-columns: 1fr; }
   .agenda-item { align-items: stretch; flex-direction: column; }
   .session-form { grid-template-columns: 1fr; }
   .row-actions { display: grid; }
@@ -991,8 +1054,8 @@ tbody tr:hover {
   }
 
   .assistant {
-    right: 12px;
-    bottom: 12px;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
   }
 
   .assistant > button {

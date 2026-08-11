@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { API_BASE } from '@/lib/api';
-import Assistant from '@/components/Assistant';
 
 type Room = { id: number; name: string; capacity: number };
 type Person = { id: number; full_name: string; email: string; kind: string };
@@ -54,23 +53,11 @@ export default function AdminDashboard() {
         <a className="button" href="/admin/sessions">Session calendar</a>
       </section>
       {error && <p className="notice error">{error}</p>}
-      <table className="counts">
-        <thead>
-          <tr>
-            <th>Rooms</th>
-            <th>Sessions this week</th>
-            <th>People</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>{rooms.length}</td>
-            <td>{sessions.length}</td>
-            <td>{people.length}</td>
-          </tr>
-        </tbody>
-      </table>
-      <Assistant />
+      <section className="stat-grid">
+        <article className="stat-card"><span>Rooms</span><strong>{rooms.length}</strong><div className="stat-bars"><i /><i /><i /></div></article>
+        <article className="stat-card"><span>Sessions this week</span><strong>{sessions.length}</strong><div className="stat-donut" style={{ '--stat-progress': `${Math.min(sessions.length * 10, 100)}%` } as React.CSSProperties}><b>{sessions.length}</b></div></article>
+        <article className="stat-card"><span>People</span><strong>{people.length}</strong><div className="stat-bar"><i style={{ width: `${Math.min(people.length * 5, 100)}%` }} /></div></article>
+      </section>
     </main>
   );
 }
