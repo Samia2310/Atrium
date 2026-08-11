@@ -49,6 +49,37 @@ npm run build
 npm test
 ```
 
+## Validation notes
+
+### Schema, indexes, and seed data defects
+
+The starter migration used nullable columns, `numeric(10,2)` for credit balances and fees, had no valid-value checks, and did not prevent duplicate active enrolments. Its only session index began with `created_at`, although public schedule and conflict queries are driven by time, room, coach, and status. Migration `003_integrity_and_indexes.sql` fixes these root causes with non-null constraints, integer credit columns, domain checks, a unique lower-case email index, a partial unique active-enrolment index, and partial room/coach time indexes.
+
+The historical seed is useful for validation but contains legacy rows that violate current business rules: fractional credits and fees, sessions outside opening hours, cross-midnight sessions, and sessions on closed days. Migration 003 floors fractional values rather than granting extra credit. Runtime session creation and rescheduling apply centre-local opening-hours and overlap rules; cancelled sessions are excluded from active conflict and catalogue queries. Inactive people and cancelled/completed sessions must not be treated as bookable catalogue rows.
+
+No query was changed solely for a measured performance improvement in this submission, so there is no honest before/after `EXPLAIN (ANALYZE, BUFFERS)` result to report. The indexes above are correctness and access-path repairs; production tuning should capture plans on the target PostgreSQL dataset before and after adding or changing an index.
+
+### Invariants and ownership
+
+The database enforces non-null foreign-key relationships, positive room capacity, valid roles/statuses/session types, ordered timestamps, non-negative integer credits and fees, unique email addresses, and one active enrolment per person/session. These are storage invariants that must remain true regardless of which API or future job writes the row.
+
+Application code enforces centre-local opening hours, Sunday closure, session durations, the intensive 210-minute room hold, room capacity, no self-enrolment, no overlapping commitments, coach booking lead time, refund tiers, and role-filtered visibility. These rules depend on current time, related rows, or a caller's role and are implemented in the owning transaction/query rather than as simple row checks. Booking, cancellation, session creation, and rescheduling use row locks plus serializable transactions so the checks and credit movements commit together.
+
+### Transaction isolation and known anomalies
+
+The default `read committed` level is used for ordinary reads, authentication, catalogue queries, and notification/reporting reads. It does not prevent non-repeatable reads or phantoms: a later statement can see a changed or newly inserted row.
+
+Booking, cancellation, session creation, rescheduling, and the affected-participant movement path use `serializable`. This prevents serialization anomalies by aborting one conflicting transaction, but it does not prevent the transaction from failing with a serialization error; callers must retry or return a conflict. Email delivery is outside the database transaction, so SMTP failure can still require an operational retry after a database commit.
+
+### Assumptions and unfinished work
+
+- Fees are credits, not currency. The brief left amounts open, so the schedule above is an intentionally simple duration-scaled choice; changing it requires updating both displayed policy copy and server-side fee calculation.
+- Participant refunds use 100/75/50/0 per cent and floor partial results because a participant cancellation returns a seat to the catalogue but does not release the coach's room cost. A different policy would change both `credits.ts` and the public page.
+- Public booking by email is treated as participant registration and uses the password-token flow; without a verified password, the account cannot safely be reused as a signed-in identity.
+- The centre timezone is `America/New_York`; changing it affects opening-hour checks, displayed times, deadlines, and scheduled jobs.
+- The deterministic assistant stub is the local/test provider. A hosted or Ollama model still needs deployment credentials and operational monitoring, so live model integration is unfinished.
+- Automated browser coverage and production SMTP/provider deployment are unfinished because the repository has no browser test harness or provider credentials. API tests, TypeScript builds, and Mailpit provide the current verification boundary.
+
 ## Implementation choices and booking rules
 
 - Database access: raw `pg`, kept close to the SQL constraints and transaction boundaries used by the booking rules.

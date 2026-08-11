@@ -94,8 +94,8 @@ export default function Assistant() {
           </form>
         </div>
       ) : (
-        <button type="button" className="assistant-launcher" onClick={() => setOpen(true)}>
-          Ask Atrium
+        <button type="button" className="assistant-launcher" aria-label="Open assistant" onClick={() => setOpen(true)}>
+          Ask Assistant
         </button>
       )}
     </aside>

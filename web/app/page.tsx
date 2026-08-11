@@ -124,6 +124,14 @@ export default async function PublicPage() {
           <p>Short: room 30 credits, seat 15 credits. Standard: room 40, seat 20. Intensive: room 120, seat 60.</p>
         </article>
         <article>
+          <h2>Booking deadline</h2>
+          <p>Coaches must book a room at least 48 hours before the session starts. Participants can book listed sessions while a place remains available.</p>
+        </article>
+        <article>
+          <h2>Opening hours</h2>
+          <p>Sessions must fit within 07:00-21:00, Monday to Saturday, in America/New_York. Sundays are closed. The centre timezone controls all deadlines.</p>
+        </article>
+        <article>
           <h2>Coach cancellation</h2>
           <p>96+ hours notice refunds 100%, 48-96 hours 50%, 24-48 hours 25%, under 24 hours 0%.</p>
         </article>
@@ -134,6 +142,10 @@ export default async function PublicPage() {
         <article>
           <h2>When a coach cancels</h2>
           <p>Every affected participant gets a full seat refund because the cancellation was outside their control.</p>
+        </article>
+        <article>
+          <h2>Credit details</h2>
+          <p>Credits are whole numbers. Partial refunds round down, so a 15-credit seat refunded at 75% returns 11 credits. An intensive session holds its room for 210 minutes, including its 30-minute interval.</p>
         </article>
         </div>
       </section>

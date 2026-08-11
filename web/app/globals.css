@@ -743,8 +743,9 @@ tbody tr:hover {
 }
 
 .assistant-launcher {
-  min-height: 46px;
-  border-radius: 999px;
+  min-height: 44px;
+  border-radius: 7px;
+  padding-inline: 14px;
   box-shadow: 0 14px 34px rgb(6 63 45 / 24%);
 }
 
@@ -992,7 +993,6 @@ tbody tr:hover {
   .assistant {
     right: 12px;
     bottom: 12px;
-    left: 12px;
   }
 
   .assistant > button {
