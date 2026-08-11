@@ -22,41 +22,88 @@ npm run dev:web
 
 ```text
 Atrium/
-├── api/                         # Backend (Node.js/TypeScript)
-│   ├── dist/                    # Compiled backend output
+├── api/                              # Backend (Node.js/TypeScript)
+│   ├── dist/                         # Compiled backend output
 │   ├── src/
-│   │   ├── jobs/                # Background and scheduled jobs
-│   │   ├── routes/              # API route handlers
-│   │   ├── auth.ts              # Authentication and session management
-│   │   ├── bookingRules.ts      # Booking, cancellation and refund rules
-│   │   ├── credits.ts           # Credit, fee and refund calculations
-│   │   ├── db.ts                # PostgreSQL database client
-│   │   ├── email.ts             # Nodemailer/SMTP email handling
-│   │   ├── events.ts            # Event handling
-│   │   ├── index.ts             # API entry point
-│   │   └── nodemailer.d.ts      # Nodemailer type declarations
-│   ├── test/                    # Backend test suite
+│   │   ├── jobs/
+│   │   │   ├── dailyJobs.ts
+│   │   │   ├── events.ts
+│   │   │   ├── scheduler.ts
+│   │   │   └── timezone.ts
+│   │   ├── routes/
+│   │   │   ├── assistant.ts
+│   │   │   ├── assistantTools.ts
+│   │   │   ├── calendar.ts
+│   │   │   ├── enrolments.ts
+│   │   │   ├── people.ts
+│   │   │   ├── rooms.ts
+│   │   │   └── sessions.ts
+│   │   ├── auth.ts                   # Authentication and session management
+│   │   ├── bookingRules.ts           # Booking and cancellation rules
+│   │   ├── credits.ts                # Credit, fee and refund calculations
+│   │   ├── db.ts                     # PostgreSQL database client
+│   │   ├── email.ts                  # SMTP email handling
+│   │   ├── events.ts                 # Event handling
+│   │   ├── index.ts                  # API entry point
+│   │   └── nodemailer.d.ts           # Nodemailer type declarations
+│   ├── test/
+│   │   ├── auth.test.ts
+│   │   ├── credits.test.ts
+│   │   ├── enrolments.test.ts
+│   │   └── timezone.test.ts
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── web/                         # Frontend (Next.js/TypeScript)
-│   ├── app/                     # Next.js App Router pages
-│   ├── calendar/                # Calendar-related components and views
-│   ├── components/              # Shared UI components
-│   ├── lib/                     # Frontend utilities and helpers
-│   ├── middleware.ts            # Route middleware and access control
+├── web/                              # Frontend (Next.js/TypeScript)
+│   ├── app/
+│   │   ├── (dashboard)/
+│   │   │   └── layout.tsx
+│   │   ├── admin/
+│   │   │   ├── sessions/
+│   │   │   │   └── page.tsx
+│   │   │   └── page.tsx
+│   │   ├── calendar/
+│   │   │   └── page.tsx
+│   │   ├── coach/
+│   │   │   └── page.tsx
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   ├── participant/
+│   │   │   └── page.tsx
+│   │   ├── set-password/
+│   │   │   └── page.tsx
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components/
+│   │   ├── Assistant.tsx
+│   │   ├── RoleCalendar.tsx
+│   │   ├── RoleSubNav.tsx
+│   │   └── SiteNav.tsx
+│   ├── lib/
+│   │   └── api.ts
+│   ├── middleware.ts                  # Route middleware and access control
 │   ├── next-env.d.ts
 │   ├── next.config.mjs
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── assignment/                  # Assignment brief
-├── migrations/                  # Database schema, seed and migration files
-├── scripts/                    # Development and migration scripts
-├── package.json                # Root workspace configuration
-├── env.example                  # Example environment configuration
-├── README.md
-└── INSTRUCTIONS.md
+├── assignment/
+│   └── ASSIGNMENT.md                  # Assignment brief
+├── migrations/
+│   ├── 001_init.sql
+│   ├── 002_password_tokens.sql
+│   └── 003_integrity_and_indexes.sql
+├── scripts/
+│   ├── dev.mjs
+│   ├── migrate.mjs
+│   └── web-dev.mjs
+├── .gitignore
+├── env.example
+├── INSTRUCTIONS.md
+├── package.json                       # Root workspace configuration
+├── package-lock.json
+└── README.md
 
 Open http://localhost:3000. The seeded administrator credentials are listed in `env.example`.
 
